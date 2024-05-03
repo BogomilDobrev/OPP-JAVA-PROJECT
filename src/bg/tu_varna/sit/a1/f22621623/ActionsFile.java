@@ -7,11 +7,12 @@ import java.io.IOException;
 import java.util.*;
 
 public class ActionsFile {
-    private final String FILE_PATH = "Tables.txt";
+    private String FILE_PATH = "tablica";
     private HashMap<String,List< List<String>>> rows= new LinkedHashMap<>();
     private String tableName;
-    public Map<String,List<List<String>>> read() {
-        try(FileReader fileReader = new FileReader(FILE_PATH)){
+    public Map<String,List<List<String>>> read(String path) {
+        try(FileReader fileReader = new FileReader(path)){
+            FILE_PATH = path;
             Scanner scanner = new Scanner(fileReader);
             while (scanner.hasNext()){
                 String line = scanner.nextLine();
@@ -46,4 +47,25 @@ public class ActionsFile {
             throw new RuntimeException(e);
         }
     }
+    public void write(String path){
+        try(FileWriter fileWriter = new FileWriter(path,true)){
+            for (Map.Entry<String, List<List<String>>> m : rows.entrySet()) {
+                fileWriter.write(m.getKey());
+                fileWriter.write(System.lineSeparator());
+                for (List<String> strings : m.getValue()) {
+                    for (String string : strings) {
+                        fileWriter.write(string);
+                        fileWriter.write(" ");
+                    }
+                    fileWriter.write(System.lineSeparator());
+                }
+            }
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+    public void close(){
+        System.out.println("Successfully closed "+FILE_PATH);
+    }
+
 }
