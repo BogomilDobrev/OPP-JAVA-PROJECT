@@ -6,10 +6,8 @@ import java.util.List;
 public class Table {
     private List<Row> rows;
     private List<Column> columns;
-    private String databaseName;
     private String tableName;
-    public Table(String databaseName, String tableName) {
-        this.databaseName = databaseName;
+    public Table(String tableName) {
         this.tableName = tableName;
         rows = new ArrayList<>();
         columns = new ArrayList<>();
@@ -31,14 +29,6 @@ public class Table {
         this.columns = columns;
     }
 
-    public String getDatabaseName() {
-        return databaseName;
-    }
-
-    public void setDatabaseName(String databaseName) {
-        this.databaseName = databaseName;
-    }
-
     public String getTableName() {
         return tableName;
     }
@@ -47,4 +37,3 @@ public class Table {
         this.tableName = tableName;
     }
 }
-

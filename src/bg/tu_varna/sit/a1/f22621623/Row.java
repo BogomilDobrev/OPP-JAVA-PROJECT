@@ -13,24 +13,16 @@ public class Row {
         this.rowValue = new LinkedHashMap<>();
     }
 
-    public int getRow() {
-        return row;
-    }
+    public int getRow() { return row; }
 
-    public void setRow(int row) {
-        this.row = row;
-    }
+    public void setRow(int row) { this.row = row; }
 
-    public Map<String, String> getRowValue() {
-        return rowValue;
-    }
+    public Map<String, String> getRowValue() { return rowValue; }
 
-    public void setRowValue(Map<String, String> rowValue) {
-        this.rowValue = rowValue;
-    }
+    public void setRowValue(Map<String, String> rowValue) { this.rowValue = rowValue; }
     public void printRowValue(){
         for(Map.Entry<String, String> entry : rowValue.entrySet()){
-            System.out.print(entry.getValue()+"\t");
+            System.out.print(entry.getValue()+"\t\t");
         }
         System.out.println();
     }
