@@ -10,25 +10,35 @@ public class TableFunctions {
     private String databaseName;
     public static final int limitRows = 10;
 
-    public TableFunctions(ActionsFile actionsFile) {
+    public TableFunctions(ActionsFile actionsFile, Database database, String databaseName) {
         this.actionsFile = actionsFile;
+        this.database = database;
+        this.databaseName = databaseName;
     }
 
     public void showTables() {
-        HashMap<String, List<Table>> db = database.getDatabase();
-        for (Map.Entry<String, List<Table>> stringListEntry : db.entrySet()) {
-            for (Table table : stringListEntry.getValue()) {
-                System.out.println(table.getTableName());
+        HashMap<String, Table> databaseTables = database.getDatabaseTables();
+        for (Map.Entry<String, Table> stringTableEntry : databaseTables.entrySet()) {
+            System.out.println("Table Name: " + stringTableEntry.getKey());
+            Table table = stringTableEntry.getValue();
+            List<Row> rows = table.getRows();
+            List<Column> columns = table.getColumns();
+            for (Column column : columns) {
+                System.out.print(column.getColumnName() + "\t\t");
+            }
+            System.out.println();
+            for (Row row : rows) {
+                row.printRowValue();
             }
         }
     }
 
-    public void importTables() {
+    public void importTables(String path ) {
         List<Table> tableArrayList = new ArrayList<>();
-        Map<String, List<List<String>>> read = actionsFile.read();
+        Map<String, List<List<String>>> read = actionsFile.read(path);
         for (Map.Entry<String, List<List<String>>> stringListEntry : read.entrySet()) {
             String tableName = stringListEntry.getKey();
-            List<List<String>> tables = stringListEntry.getValue();
+            List<List<String>> tables = stringListEntry.getValue();// redove i koloni
             List<String> columnNames = tables.get(0);
             List<Row> rows = new ArrayList<>();
             for (int i = 1; i < tables.size(); i++) {
@@ -38,28 +48,29 @@ public class TableFunctions {
                 }
                 rows.add(row);
             }
-            List<String> values = tables.get(1);
+            List<String> values = new ArrayList<>(tables.get(1));// vzemame parviya red za da proverim kakav tip e
             for (int i = 0; i < values.size(); i++) {
-                if (checkDouble(values.get(i))) {
-                    values.set(i, "Double");
-                } else if (checkInteger(values.get(i))) {
+                if (checkInteger(values.get(i))) {
                     values.set(i, "Integer");
+                } else if (checkDouble(values.get(i))) {
+                    values.set(i, "Double");
                 } else {
                     values.set(i, "String");
                 }
             }
             List<Column> columnsList = new ArrayList<>();
-            for (int i = 0; i < tables.size(); i++) {
+            for (int i = 0; i < tables.get(0).size(); i++) {
                 Column column = new Column(tables.get(0).get(i), values.get(i));
-                for (int j = 0; j < tables.get(i).size(); j++) {
+                for (int j = 0; j < tables.size(); j++) {
                     column.getCell().add(new Cell(tables.get(j).get(i)));
                 }
                 columnsList.add(column);
             }
-            Table table = new Table(databaseName, tableName);
+            Table table = new Table(tableName);
             table.setRows(rows);
             table.setColumns(columnsList);
             tableArrayList.add(table);
+            database.addTable(tableName, table);
         }
     }
 
