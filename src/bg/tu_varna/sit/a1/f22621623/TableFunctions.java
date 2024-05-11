@@ -75,57 +75,55 @@ public class TableFunctions {
     }
 
     public void describe(String tableName) {
-        HashMap<String, List<Table>> database1 = this.database.getDatabase();
-        for (Map.Entry<String, List<Table>> stringListEntry : database1.entrySet()) {
-            for (Table table : stringListEntry.getValue()) {
-                if (table.getTableName().equals(tableName)) {
-                    List<Column> columns = table.getColumns();
-                    for (Column column : columns) {
-                        System.out.println(column.getColumnType());
-                    }
-                    return;
+        HashMap<String, Table> databaseTables = database.getDatabaseTables();
+        for (Map.Entry<String, Table> stringTableEntry : databaseTables.entrySet()) {
+            Table table = stringTableEntry.getValue();
+            if (table.getTableName().equals(tableName)) {
+                List<Column> columns = table.getColumns();
+                for (Column column : columns) {
+                    System.out.println(column.getColumnType());
                 }
+                return;
             }
         }
     }
 
     public void print(String name) {
-        HashMap<String, List<Table>> database1 = this.database.getDatabase();
-        for (Map.Entry<String, List<Table>> stringListEntry : database1.entrySet()) {
-            for (Table table : stringListEntry.getValue()) {
-                if (table.getTableName().equals(name)) {
-                    List<Row> rows = table.getRows();
-                    int start = 0;
-                    int limit = limitRows;
-                    while (limit-- > 0) {
-                        if (start < rows.size()) {
-                            rows.get(start).printRowValue();
-                        } else {
-                            System.out.println("Not enough rows");
-                            break;
-                        }
+        HashMap<String, Table> databaseTables = database.getDatabaseTables();
+        if (databaseTables.containsKey(name)) {
+            Table table = databaseTables.get(name);
+            List<Row> rows = table.getRows();
+            int start = 0;
+            int limit = limitRows;
+            while (limit-- > 0) {
+                if (start < rows.size()) {
+                    rows.get(start).printRowValue();
+                } else {
+                    System.out.println("Not enough rows");
+                    break;
+                }
+                start++;
+                if (limit == 1) {
+                    System.out.println("Remaining " + (rows.size() - start));
+                    Scanner scanner = new Scanner(System.in);
+                    System.out.println("Previous page");
+                    System.out.println("Next page");
+                    System.out.println("Exit");
+                    String answer = scanner.nextLine();
+                    if (answer.equalsIgnoreCase("Previous")) {
+                        start -= limitRows - 1;
+                        limit = limitRows;
+                    } else if (answer.equalsIgnoreCase("Next")) {
                         start++;
-                        if (limit == 1) {
-                            System.out.println("Remaining " + (rows.size() - start));
-                            Scanner scanner = new Scanner(System.in);
-                            System.out.println("Previous page");
-                            System.out.println("Next page");
-                            System.out.println("Exit");
-                            String answer = scanner.nextLine();
-                            if (answer.equalsIgnoreCase("Previous")) {
-                                start -= limitRows - 1;
-                                limit = limitRows;
-                            } else if (answer.equalsIgnoreCase("Next")) {
-                                start++;
-                                limit = limitRows;
-                            } else if (answer.equalsIgnoreCase("Exit")) {
-                                limit = 0;
-                                return;
-                            }
-                        }
+                        limit = limitRows;
+                    } else if (answer.equalsIgnoreCase("Exit")) {
+                        limit = 0;
+                        return;
                     }
                 }
             }
+        } else {
+            System.out.println("Table not found");
         }
     }
 
