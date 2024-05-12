@@ -129,27 +129,23 @@ public class TableFunctions {
 
     public void export(String name, String fileName) {
         try (FileWriter fileWriter = new FileWriter(fileName, true)) {
-            HashMap<String, List<Table>> database1 = this.database.getDatabase();
-            for (Map.Entry<String, List<Table>> stringListEntry : database1.entrySet()) {
-                for (Table table : stringListEntry.getValue()) {
-                    if (table.getTableName().equals(name)) {
-                        fileWriter.write(name);
-                        fileWriter.write(System.lineSeparator());
-                        List<Column> columns = table.getColumns();
-                        for (Column column : columns) {
-                            fileWriter.write(column.getColumnName() + " ");
-                        }
-                        fileWriter.write(System.lineSeparator());
-
-                        List<Row> rows = table.getRows();
-                        for (int i = 0; i < rows.size(); i++) {
-                            Map<String, String> rowValue = rows.get(i).getRowValue();
-                            for (Map.Entry<String, String> kvp : rowValue.entrySet()) {
-                                fileWriter.write(kvp.getValue() + " ");
-                            }
-                            fileWriter.write(System.lineSeparator());
-                        }
+            HashMap<String, Table> databaseTables = database.getDatabaseTables();
+            if (databaseTables.containsKey(name)) {
+                Table table = databaseTables.get(name);
+                fileWriter.write(name);
+                fileWriter.write(System.lineSeparator());
+                List<Column> columns = table.getColumns();
+                for (Column column : columns) {
+                    fileWriter.write(column.getColumnName() + " ");
+                }
+                fileWriter.write(System.lineSeparator());
+                List<Row> rows = table.getRows();
+                for (int i = 0; i < rows.size(); i++) {
+                    Map<String, String> rowValue = rows.get(i).getRowValue();
+                    for (Map.Entry<String, String> kvp : rowValue.entrySet()) {
+                        fileWriter.write(kvp.getValue() + " ");
                     }
+                    fileWriter.write(System.lineSeparator());
                 }
             }
         } catch (IOException e) {
@@ -158,97 +154,56 @@ public class TableFunctions {
     }
 
     public void select(int n, String value, String tableName) {
-        HashMap<String, List<Table>> database1 = database.getDatabase();
-        for (Map.Entry<String, List<Table>> stringListEntry : database1.entrySet()) {
-            for (Table table : stringListEntry.getValue()) {
-                if (table.getTableName().equals(tableName)) {
-                    List<Row> rows = table.getRows();
-                    for (Row row : rows) {
-                        Map<String, String> rowValue = row.getRowValue();
-                        int counter = 1;
-                        Row currRow = null;
-                        for (Map.Entry<String, String> stringStringEntry : rowValue.entrySet()) {
-                            counter++;
-                            if (counter == n) {
-                                if (value.equals(stringStringEntry.getValue())) {
-                                    currRow = row;
-                                    break;
-                                }
-                            }
-                        }
-                        if (currRow == null) {
-                            System.out.println("No value found!");
-                        } else {
-                            currRow.printRowValue();
-                        }
+        HashMap<String, Table> databaseTables = database.getDatabaseTables();
+        if (databaseTables.containsKey(tableName)) {
+            Table table = databaseTables.get(tableName);
+            List<Row> rows = table.getRows();
+            String columnName = table.getColumns().get(n-1).getColumnName();
+            for (Row row : rows) {
+                if(row.getRowValue().containsKey(columnName)){
+                    String valueFromRow = row.getRowValue().get(columnName);
+                    if (value.equals(valueFromRow)) {
+                        row.printRowValue();
                     }
                 }
             }
         }
-
-
     }
 
     public void addColumn(String tableName, String columnName, String columnType) {
-        HashMap<String, List<Table>> database1 = this.database.getDatabase();
-        for (Map.Entry<String, List<Table>> stringListEntry : database1.entrySet()) {
-            for (Table table : stringListEntry.getValue()) {
-                if (table.getTableName().equals(tableName)) {
-                    Column column = new Column(columnName, columnType);
-                    int size = table.getColumns().size();
-                    for (int i = 0; i < size; i++) {
-                        column.getCell().add(new Cell(null));
-                    }
-                    table.getColumns().add(column);
-                    for (int i = 0; i < size; i++) {
-                        table.getRows().get(i).getRowValue().put(columnName, null);
-                    }
-                    return;
-                }
+        HashMap<String, Table> databaseTables = database.getDatabaseTables();
+        if (databaseTables.containsKey(tableName)) {
+            Table table = databaseTables.get(tableName);
+            Column column = new Column(columnName, columnType);
+            int size = table.getColumns().size();
+            column.getCell().add(new Cell(columnName));
+            for (int i = 1; i < table.getRows().size(); i++) {
+                column.getCell().add(new Cell(null));
             }
+            table.getColumns().add(column);
+            size = table.getColumns().size();
+            for (int i = 0; i < size; i++) {
+                table.getRows().get(i).getRowValue().put(columnName, null);
+            }
+
+            return;
         }
     }
 
     public void update(String tableName, int n, String value, int targetColumn, String targetValue) {
-        HashMap<String, List<Table>> database1 = this.database.getDatabase();
-        for (Map.Entry<String, List<Table>> stringListEntry : database1.entrySet()) {
-            for (Table table : stringListEntry.getValue()) {
-                if (table.getTableName().equals(tableName)) {
-                    List<Row> rows = table.getRows();
-                    int counterForColum = 1;
-                    boolean foundReal = false;
-                    for (Row row : rows) {
-                        counterForColum++;
-                        Map<String, String> rowValue = row.getRowValue();
-                        int counter = 1;
-                        boolean found = false;
-                        Row currRowForTarget = null;
-                        for (Map.Entry<String, String> stringStringEntry : rowValue.entrySet()) {
-                            counter++;
-                            if (counter == n) {
-                                if (value.equals(stringStringEntry.getValue())) {
-                                    found = true;
-                                }
-                            }
-                            if (counter == targetColumn) {
-                                currRowForTarget = row;
-                            }
-                        }
-                        counter = 1;
-                        if (found) {
-                            for (Map.Entry<String, String> stringStringEntry : rowValue.entrySet()) {
-                                counter++;
-                                if (counter == targetColumn) {
-                                    stringStringEntry.setValue(targetValue);
-                                }
-                            }
-                            foundReal = found;
-                            break;
-                        }
-                    }
-                    if (foundReal) {
-                        table.getColumns().get(targetColumn).getCell().get(counterForColum).setValue(targetValue);
-                    }
+        HashMap<String, Table> databaseTables = database.getDatabaseTables();
+        if (databaseTables.containsKey(tableName)) {
+            boolean foundReal = false;
+            Table table = databaseTables.get(tableName);
+            List<Row> rows = table.getRows();
+            String columnName = table.getColumns().get(n-1).getColumnName();
+            String columnNameTarget = table.getColumns().get(targetColumn-1).getColumnName();
+
+            for (int i =0;i< rows.size();i++) {
+                if(rows.get(i).getRowValue().containsKey(columnName) && rows.get(i).getRowValue().get(columnName).equals(value)){
+                    rows.get(i).getRowValue().put(columnNameTarget,targetValue);
+                    foundReal = true;
+                    table.getColumns().get(targetColumn-1).getCell().get(i+1).setValue(targetValue);
                 }
             }
         }
