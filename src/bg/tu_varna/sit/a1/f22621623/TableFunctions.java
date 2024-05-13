@@ -210,36 +210,203 @@ public class TableFunctions {
     }
 
     public void delete(String tableName, int n, String value) {
-        HashMap<String, List<Table>> database1 = this.database.getDatabase();
-        for (Map.Entry<String, List<Table>> stringListEntry : database1.entrySet()) {
-            for (Table table : stringListEntry.getValue()) {
-                if (table.getTableName().equals(tableName)) {
-                    List<Column> columns = table.getColumns();
-                    List<Row> rows = table.getRows();
-                    int counter = 1;
-                    boolean flag = false;
-                    for (Row row : rows) {
-                        counter++;
-                        Map<String, String> rowValue = row.getRowValue();
-                        int counterForColum = 1;
-                        for (Map.Entry<String, String> stringStringEntry : rowValue.entrySet()) {
-                            counterForColum++;
-                            if (counterForColum == n) {
-                                if (value.equals(stringStringEntry.getValue())) {
-                                    table.getRows().remove(row);
-                                    flag = true;
-                                    break;
-                                }
-                            }
-                            if (flag) {
-                                break;
-                            }
-                        }
+        HashMap<String, Table> databaseTables = database.getDatabaseTables();
+        if (databaseTables.containsKey(tableName)) {
+            Table table = databaseTables.get(tableName);
+            List<Column> columns = table.getColumns();
+            List<Row> rows = table.getRows();
+            String columnName = table.getColumns().get(n - 1).getColumnName();
+            boolean flag = false;
+            for (int i = 0; i <rows.size() ; i++) {
+                if(rows.get(i).getRowValue().containsKey(columnName)
+                        && rows.get(i).getRowValue().get(columnName).equals(value)){
+                    rows.remove(rows.get(i));
+                    for (int j = 0; j < table.getColumns().size(); j++) {
+                        table.getColumns().get(j).getCell().remove(i+1);
                     }
-                    table.getColumns().get(n).getCell().remove(counter);
-
+                    i--;
                 }
             }
+        }
+    }
+
+    public void insert(String tableName, List<String> values) {
+        HashMap<String, Table> databaseTables = database.getDatabaseTables();
+        if (databaseTables.containsKey(tableName)) {
+            Row row = new Row(databaseTables.get(tableName).getRows().size());
+            List<Column> columns = databaseTables.get(tableName).getColumns();
+            List<String> columnNames = new ArrayList<>();
+            for (Column column : columns) {
+                columnNames.add(column.getColumnName());
+            }
+            for (int i = 0; i < values.size(); i++) {
+                row.getRowValue().put(columnNames.get(i), values.get(i));
+                databaseTables.get(tableName).getColumns().get(i).getCell().add(new Cell(values.get(i)));
+            }
+            databaseTables.get(tableName).getRows().add(row);
+        }
+    }
+
+    public void innerJoin(String table1, int n1, String table2, int n2) {
+        HashMap<String, Table> databaseTables = database.getDatabaseTables();
+        if (databaseTables.containsKey(table1) && databaseTables.containsKey(table2)) {
+            Table table = databaseTables.get(table1);
+            Table table3 = databaseTables.get(table2);
+            String columnName = table.getColumns().get(n1-1).getColumnName();
+            String columnName2 = table3.getColumns().get(n2-1).getColumnName();
+            Table result = new Table("Result");
+            List<Row> rows = table.getRows();
+            List<Row> rows1 = table3.getRows();
+            for (Row row : rows) {
+                for (Row row1 : rows1) {
+                    if (row.getRowValue().containsKey(columnName) && row1.getRowValue().containsKey(columnName2)) {
+                        String valueTableOne = row.getRowValue().get(columnName);
+                        String valueTableTwo = row1.getRowValue().get(columnName2);
+                        if (valueTableOne.equals(valueTableTwo)) {
+                            Map<String, String> rowValue = row.getRowValue();
+                            Map<String, String> rowValue1 = row1.getRowValue();
+                            rowValue.putAll(rowValue1);
+                            Row rowwwww = new Row(result.getRows().size());
+                            rowwwww.setRowValue(rowValue);
+                            result.getRows().add(rowwwww);
+                        }
+                    }
+                }
+            }
+            for (Row row : result.getRows()) {
+                row.printRowValue();
+            }
+        } else throw new IllegalArgumentException("Tables dont exists!");
+
+    }
+
+    public void rename(String oldName, String newName) {
+        HashMap<String, Table> databaseTables = database.getDatabaseTables();
+        if (databaseTables.containsKey(oldName)) {
+            if (databaseTables.containsKey(newName)) {
+                throw new IllegalArgumentException("New name already exists!");
+            }
+            databaseTables.get(oldName).setTableName(newName);
+            databaseTables.put(newName, databaseTables.get(oldName));
+            databaseTables.remove(oldName);
+
+        }
+    }
+
+    public int count(String tableName, int n, String value) {
+        HashMap<String, Table> databaseTables = database.getDatabaseTables();
+        int counter = 0;
+        if (databaseTables.containsKey(tableName)) {
+            Table table = databaseTables.get(tableName);
+            for (Cell cell : table.getColumns().get(n-1).getCell()) {
+                if (cell.getValue().equals(value)) {
+                    counter++;
+                }
+            }
+        }
+        return counter;
+    }
+
+    public void aggregate(String tableName, int n, String searchValue, int targetN, String operation) {
+        HashMap<String, Table> databaseTables = database.getDatabaseTables();
+        if (databaseTables.containsKey(tableName)) {
+            Table table = databaseTables.get(tableName);
+            List<Row> rows = table.getRows();
+            String columnName = table.getColumns().get(n-1).getColumnName();
+            String columnNameTarget = table.getColumns().get(targetN - 1).getColumnName();
+            List<String> values = new ArrayList<>();
+            for (Row row : rows) {
+                if(row.getRowValue().containsKey(columnName) && row.getRowValue().containsKey(columnNameTarget)){
+                    if(row.getRowValue().get(columnName).equals(searchValue)) {
+                        values.add(row.getRowValue().get(columnNameTarget));
+                    }
+                }
+            }
+            String columnType = table.getColumns().get(targetN-1).getColumnType();
+            if (columnType.equalsIgnoreCase("String")) {
+                throw new IllegalArgumentException("Wrong type!");
+            }
+            operation = operation.toLowerCase();
+            if (columnType.equalsIgnoreCase("Integer")) {
+                List<Integer> parsedValues = new ArrayList<>();
+                for (String value : values) {
+                    parsedValues.add(Integer.parseInt(value));
+                }
+                operation(parsedValues,operation);
+
+            } else if (columnType.equalsIgnoreCase("Double")) {
+                List<Double> parsedValues = new ArrayList<>();
+                for (String value : values) {
+                    parsedValues.add(Double.parseDouble(value));
+                }
+
+                operation(operation, parsedValues);
+            }
+
+        }
+
+
+    }
+
+    private static void operation(List<Integer> parsedValues,String operation) {
+        switch (operation) {
+            case "sum": {
+                int result = 0;
+                for (Integer parsedValue : parsedValues) {
+                    result += parsedValue;
+                }
+                System.out.println("Sum is: " + result);
+            }
+            break;
+            case "product": {
+                int result = 1;
+                for (Integer parsedValue : parsedValues) {
+                    result *= parsedValue;
+                }
+                System.out.println("Product is: " + result);
+            }
+            break;
+            case "maximum": {
+                Collections.sort(parsedValues);
+                System.out.println("Maximum is: " + parsedValues.get(parsedValues.size() - 1));
+            }
+            break;
+            case "minimum": {
+                Collections.sort(parsedValues);
+                System.out.println("Minimum is: " + parsedValues.get(0));
+            }
+            break;
+        }
+    }
+
+    private static void operation(String operation, List<Double> parsedValues) {
+        switch (operation) {
+            case "sum": {
+                int result = 0;
+                for (Double parsedValue : parsedValues) {
+                    result += parsedValue;
+                }
+                System.out.println("Sum is: " + result);
+            }
+            break;
+            case "product": {
+                int result = 1;
+                for (Double parsedValue : parsedValues) {
+                    result *= parsedValue;
+                }
+                System.out.println("Product is: " + result);
+            }
+            break;
+            case "maximum": {
+                Collections.sort(parsedValues);
+                System.out.println("Maximum is: " + parsedValues.get(parsedValues.size() - 1));
+            }
+            break;
+            case "minimum": {
+                Collections.sort(parsedValues);
+                System.out.println("Minimum is: " + parsedValues.get(0));
+            }
+            break;
         }
     }
 
@@ -259,5 +426,23 @@ public class TableFunctions {
             return false;
         }
         return true;
+    }
+    public void help(){
+        StringBuilder sb=new StringBuilder();
+        sb.append("The following commands are supported: \n");
+        sb.append("open \"file\"  opens file\n");
+        sb.append("close \t closes the currently open file\n");
+        sb.append("save \t saves the currently open file\n");
+        sb.append("saveas \t save the currently opened file in <file>\n");
+        sb.append("help \t prints this information\n");
+        sb.append("exit \t exits the program\n");
+        System.out.println(sb.toString());
+    }
+    public void open(String path){
+        actionsFile.read(path);
+    }
+
+    public ActionsFile getActionsFile() {
+        return actionsFile;
     }
 }
